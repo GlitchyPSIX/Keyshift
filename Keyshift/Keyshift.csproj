@@ -12,13 +12,14 @@
     <AssemblyVersion></AssemblyVersion>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <FileVersion></FileVersion>
-    <Version>0.1.0-beta1.h1</Version>
+    <Version>0.1.0-beta1.X0</Version>
     <PackageReleaseNotes>First Reeeelease.</PackageReleaseNotes>
     <PackageIcon>icon.png</PackageIcon>
     <Description>(WIP) C# Keyframe Timeline/Sequencer/Dope Sheet library.</Description>
     <Company>GLITCHYPSI</Company>
     <Authors>GlitchyPSI</Authors>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>
