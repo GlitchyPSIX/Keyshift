@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>9</LangVersion>
+    <Title>Keyshift</Title>
+    <Copyright>© GLITCHYPSI 2022</Copyright>
+    <PackageProjectUrl>https://github.com/GlitchyPSIX/Keyshift</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/GlitchyPSIX/Keyshift</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>keyframe;dope sheet;sequencer;c#;library</PackageTags>
+    <AssemblyVersion></AssemblyVersion>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <FileVersion></FileVersion>
+    <Version>0.1.0-beta1.h1</Version>
+    <PackageReleaseNotes>First Reeeelease.</PackageReleaseNotes>
+    <PackageIcon>icon.png</PackageIcon>
+    <Description>(WIP) C# Keyframe Timeline/Sequencer/Dope Sheet library.</Description>
+    <Company>GLITCHYPSI</Company>
+    <Authors>GlitchyPSI</Authors>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\.github\icon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+  </ItemGroup>
+
+</Project>
