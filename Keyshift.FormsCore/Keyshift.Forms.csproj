@@ -6,7 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <LangVersion>9</LangVersion>
     <Title>Keyshift.Forms</Title>
-    <Version>0.1.0-beta1.X0</Version>
+    <Version>0.1.0</Version>
     <Description>Winforms GUI for Keyshift.</Description>
     <Copyright>© GLITCHYPSI 2022</Copyright>
     <PackageProjectUrl>https://github.com/GlitchyPSIX/Keyshift</PackageProjectUrl>
@@ -15,7 +15,7 @@
     <RepositoryUrl>https://github.com/GlitchyPSIX/Keyshift</RepositoryUrl>
     <RepositoryType></RepositoryType>
     <PackageTags>keyframe;dope sheet;sequencer;c#;library</PackageTags>
-    <PackageReleaseNotes>First prerelease.</PackageReleaseNotes>
+    <PackageReleaseNotes>Much better everything</PackageReleaseNotes>
     <AssemblyVersion></AssemblyVersion>
     <FileVersion></FileVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>

@@ -12,8 +12,8 @@
     <AssemblyVersion></AssemblyVersion>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <FileVersion></FileVersion>
-    <Version>0.1.0-beta1.X0</Version>
-    <PackageReleaseNotes>First Reeeelease.</PackageReleaseNotes>
+    <Version>0.1.0</Version>
+    <PackageReleaseNotes>Massive improvements to basically everything just use this one trust me</PackageReleaseNotes>
     <PackageIcon>icon.png</PackageIcon>
     <Description>(WIP) C# Keyframe Timeline/Sequencer/Dope Sheet library.</Description>
     <Company>GLITCHYPSI</Company>
