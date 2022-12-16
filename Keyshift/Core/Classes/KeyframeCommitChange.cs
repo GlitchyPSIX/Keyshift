@@ -23,7 +23,7 @@ namespace Keyshift.Core.Classes
         }
 
         public override string ToString() {
-            return $"{_change.ChangePerformed}{(_change.Collisions.Length > 0 ? $"\n({_change.Collisions.Length} overwritten keyframes" : "")}";
+            return $"{_change.ChangePerformed}{(_change.Collisions.Length > 0 ? $"\n({_change.Collisions.Length} overwritten keyframes)" : "")}";
         }
     }
 }
