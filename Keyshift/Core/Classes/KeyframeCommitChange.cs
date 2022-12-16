@@ -1,13 +1,13 @@
 ﻿using Keyshift.Core.Interfaces;
-using Keyshift.Core.Structs;
 
-namespace Keyshift.Core.Classes {
+namespace Keyshift.Core.Classes
+{
     public class KeyframeCommitChange : IReversibleChange {
         private KeyframeRack _affectedRack;
-        private RackCommitInfo _change;
+        private RackCommitEventArgs _change;
         public KeyframeRack AffectedRack => _affectedRack;
-        public RackCommitInfo Changes => _change;
-        public KeyframeCommitChange(KeyframeRack affectedRack, RackCommitInfo changes) {
+        public RackCommitEventArgs Changes => _change;
+        public KeyframeCommitChange(KeyframeRack affectedRack, RackCommitEventArgs changes) {
             _affectedRack = affectedRack;
             _change = changes;
         }

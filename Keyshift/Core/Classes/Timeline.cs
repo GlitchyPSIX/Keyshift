@@ -7,13 +7,14 @@ using Keyshift.Core.Classes.Rack;
 using Newtonsoft.Json;
 using Keyshift.Core.Interfaces;
 using Keyshift.Core.Structs;
+using Keyshift.FormatHelpers;
 
 namespace Keyshift.Core.Classes
 {
     public class Timeline
     {
         // TODO: Make this one private and expose a readonlydictionary instead
-        public Dictionary<string, KeyframeRack> KeyframeRacks { get; } = new ();
+        public Dictionary<string, KeyframeRack> KeyframeRacks { get; } = new();
 
         public Dictionary<string, UncommittedRackChange> UncommittedRackChanges { get; } =
             new Dictionary<string, UncommittedRackChange>();
@@ -28,17 +29,56 @@ namespace Keyshift.Core.Classes
 
         public int Length { get; set; }
 
-        public float Fps { get; set; } = 30;
+        private float _fps = 30;
 
-        public string TimecodeString() => FormatTimecodeString(TrackheadPosition, Fps);
+        public float Fps
+        {
+            get => _fps;
+            set
+            {
+                float temp = value;
+                if (IntegerFrames) temp = (float)Math.Round(temp);
+                _fps = temp;
+            }
+        }
 
-        public Region LoopRegion { get; set; }
+        /// <summary>
+        /// If true, any FPS changes will be rounded instead of allowing fractionary values.
+        /// </summary>
+        public bool IntegerFrames = true;
 
-        public List<Region> Regions { get; set; }
+        public string TimecodeString() => Timecode.FramesToTimecode(TrackheadPosition, Fps);
+
+        public bool LoopActive { get; set; }
+
+        private bool _isLooping;
+
+        private bool _canLoop => LoopRegion != null && LoopRegion.Length != 0;
+
+        public TimelineRegion LoopRegion { get; set; }
+
+        public List<TimelineRegion> Regions { get; set; }
 
         public List<Marker> Markers { get; set; }
 
-        public HistoryManager History;
+        private HistoryManager _history;
+
+        public HistoryManager History
+        {
+            get => _history;
+            set
+            {
+                if (_history != null)
+                {
+                    _history.BeforeUndo -= OnUndo;
+                    _history.BeforeRedo -= OnRedo;
+                }
+
+                _history = value;
+                _history.BeforeUndo += OnUndo;
+                _history.BeforeRedo += OnRedo;
+            }
+        }
 
         // TODO: Add Undoable Action Interface
 
@@ -80,12 +120,32 @@ namespace Keyshift.Core.Classes
             get => _trackHead;
             set
             {
-                OnTrackheadChanged?.Invoke(this, new TrackheadChangedEventArgs(value, _trackHead));
-                _trackHead = Math.Max((value >= Length ? Length : value), 0);
+                int temp = value;
+                temp = Math.Max((value >= Length ? Length : value), 0);
+
+                if (LoopActive && _canLoop)
+                {
+                    if (_isLooping && !Playing) {
+                        _isLooping = false;
+                    }
+
+                    if (!_isLooping && Playing && LoopRegion.IsPositionInsideRegion(temp))
+                    {
+                        _isLooping = true;
+                    }
+
+                    if (_isLooping && temp > LoopRegion.FrameEnd) {
+                        temp = LoopRegion.FrameStart;
+                    }
+                }
+
+                OnTrackheadChanged?.Invoke(this, new TrackheadChangedEventArgs(temp, _trackHead));
+                _trackHead = temp;
+                
                 foreach (KeyframeRack kRack in KeyframeRacks.Values)
                 {
-                    if (Synchronize) kRack.CurrentFrame = value;
-                    else kRack.ReferenceFrame = value;
+                    if (Synchronize) kRack.CurrentFrame = _trackHead;
+                    else kRack.ReferenceFrame = _trackHead;
                 }
             }
         }
@@ -100,7 +160,8 @@ namespace Keyshift.Core.Classes
             foreach (KeyValuePair<string, KeyframeRack> kRack in KeyframeRacks)
             {
                 // woah²! antidupes!
-                Keyframe[] selected = kRack.Value.OrderedGenericList.Where(x => SelectedKeyframes.Contains(x)).Distinct().ToArray();
+                Keyframe[] selected = kRack.Value.OrderedGenericList.Where(x => SelectedKeyframes.Contains(x))
+                    .Distinct().ToArray();
                 if (selected.Length == 0) continue;
                 UncommittedRackChange changes = new UncommittedRackChange(selected);
                 UncommittedRackChanges[kRack.Key] = changes;
@@ -125,13 +186,34 @@ namespace Keyshift.Core.Classes
             }
         }
 
-        private void OnRackCommit(object rack, RackCommitInfo info) {
+        private void OnRackCommit(object rack, RackCommitEventArgs info)
+        {
             // Rack is always type KeyframeRack
-            KeyframeRack actualRack = (KeyframeRack) rack;
-            if (History != null) {
+            KeyframeRack actualRack = (KeyframeRack)rack;
+            if (History != null)
+            {
                 History.AddUndo(new KeyframeCommitChange(actualRack, info));
             }
-            
+        }
+
+        private void OnRackKeyframeAdd(object rack, RackKeyframeAddRemoveEventArgs info)
+        {
+            // Rack is always type KeyframeRack
+            KeyframeRack actualRack = (KeyframeRack)rack;
+            if (History != null)
+            {
+                History.AddUndo(new KeyframeAddChange(actualRack, info));
+            }
+        }
+
+        protected void OnUndo(object sender, EventArgs e)
+        {
+            SelectedKeyframes.Clear();
+        }
+
+        protected void OnRedo(object sender, EventArgs e)
+        {
+            SelectedKeyframes.Clear();
         }
 
         public string SerializeToJson()
@@ -140,9 +222,9 @@ namespace Keyshift.Core.Classes
             {
                 TypeNameHandling = TypeNameHandling.Auto,
                 PreserveReferencesHandling = PreserveReferencesHandling.All,
-                TypeNameAssemblyFormatHandling =  TypeNameAssemblyFormatHandling.Simple,
+                TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
                 SerializationBinder = new KIOTypesBinder()
-        });
+            });
         }
 
         /// <summary>
@@ -152,21 +234,23 @@ namespace Keyshift.Core.Classes
         /// <returns>True if success, false if failure.</returns>
         public bool DeserializeFromJson(string jsonIn)
         {
-            Dictionary<string, KeyframeRack> jE = JsonConvert.DeserializeObject<Dictionary<string, KeyframeRack>>(jsonIn, new JsonSerializerSettings()
-           {
-               TypeNameHandling = TypeNameHandling.Auto,
-               TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
-               SerializationBinder = new KIOTypesBinder()
-           });
+            Dictionary<string, KeyframeRack> jE = JsonConvert.DeserializeObject<Dictionary<string, KeyframeRack>>(
+                jsonIn, new JsonSerializerSettings()
+                {
+                    TypeNameHandling = TypeNameHandling.Auto,
+                    TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
+                    SerializationBinder = new KIOTypesBinder()
+                });
 
-           if (jE.Count == 0) return false;
-           foreach (KeyValuePair<string, KeyframeRack> kp in jE)
-           {
-               if (!KeyframeRacks.ContainsKey(kp.Key)) continue;
-               KeyframeRacks[kp.Key].Snatch(kp.Value);
-           }
-           OnTimelineLoaded?.Invoke(this, EventArgs.Empty);
-           return true;
+            if (jE.Count == 0) return false;
+            foreach (KeyValuePair<string, KeyframeRack> kp in jE)
+            {
+                if (!KeyframeRacks.ContainsKey(kp.Key)) continue;
+                KeyframeRacks[kp.Key].Snatch(kp.Value);
+            }
+
+            OnTimelineLoaded?.Invoke(this, EventArgs.Empty);
+            return true;
         }
 
         /// <summary>
@@ -178,6 +262,7 @@ namespace Keyshift.Core.Classes
             {
                 kRack.Value.Wipe();
             }
+
             OnTimelineLoaded?.Invoke(this, EventArgs.Empty);
         }
 
@@ -193,6 +278,7 @@ namespace Keyshift.Core.Classes
 
                 UncommittedRackChanges[uChange.Key].NewInterpolation = interp;
             }
+
             OnTrackheadChanged?.Invoke(this, new TrackheadChangedEventArgs(TrackheadPosition, TrackheadPosition));
         }
 
@@ -201,8 +287,9 @@ namespace Keyshift.Core.Classes
         /// </summary>
         public void ClearStagedKeyframes()
         {
-            KeyValuePair<string, UncommittedRackChange>[] ucArray = UncommittedRackChanges.Cast<KeyValuePair<string, UncommittedRackChange>>().ToArray();
-            
+            KeyValuePair<string, UncommittedRackChange>[] ucArray =
+                UncommittedRackChanges.Cast<KeyValuePair<string, UncommittedRackChange>>().ToArray();
+
             for (int i = 0; i < ucArray.Length; i++)
             {
                 UncommittedRackChanges[ucArray[i].Key]?.Dispose();
@@ -219,7 +306,8 @@ namespace Keyshift.Core.Classes
         /// <param name="forward">Move forwards or backwards? Limited when any of the deltas can't move further.</param>
         public void MoveAllDeltas(bool forward)
         {
-            bool canMove = UncommittedRackChanges.Where(x => x.Value != null).All(x => x.Value?.CanMoveBackwards == true);
+            bool canMove = UncommittedRackChanges.Where(x => x.Value != null)
+                .All(x => x.Value?.CanMoveBackwards == true);
             if (!canMove) return;
             foreach (KeyValuePair<string, UncommittedRackChange> uChange in UncommittedRackChanges)
             {
@@ -235,7 +323,8 @@ namespace Keyshift.Core.Classes
         /// <param name="forward">Move forwards or backwards? Limited when any of the deltas can't move further.</param>
         public void SetAllDeltas(int amount)
         {
-            bool canMove = UncommittedRackChanges.Where(x => x.Value != null).All(x => x.Value?.CanMoveBackwards == true);
+            bool canMove = UncommittedRackChanges.Where(x => x.Value != null)
+                .All(x => x.Value?.CanMoveBackwards == true);
             if (!canMove) return;
             foreach (KeyValuePair<string, UncommittedRackChange> uChange in UncommittedRackChanges)
             {
@@ -250,11 +339,12 @@ namespace Keyshift.Core.Classes
         /// </summary>
         public void CommitAllStaged()
         {
-            KeyValuePair<string, UncommittedRackChange>[] ucArray = UncommittedRackChanges.Cast<KeyValuePair<string, UncommittedRackChange>>().ToArray();
+            KeyValuePair<string, UncommittedRackChange>[] ucArray =
+                UncommittedRackChanges.Cast<KeyValuePair<string, UncommittedRackChange>>().ToArray();
 
             ReadOnlyDictionary<string, UncommittedRackChange> forEventChanges =
                 new ReadOnlyDictionary<string, UncommittedRackChange>(UncommittedRackChanges);
-            
+
             for (int i = 0; i < ucArray.Length; i++)
             {
                 if (UncommittedRackChanges[ucArray[i].Key] == null) continue;
@@ -267,18 +357,28 @@ namespace Keyshift.Core.Classes
         }
 
         /// <summary>
-        /// Removes all staged keyframes from their racks.
+        /// Removes all staged keyframes from their racks. Undo information: This is an operation that normally happens on only ONE rack.
         /// </summary>
         public void DeleteAllStaged()
         {
-            KeyValuePair<string, UncommittedRackChange>[] ucArray = UncommittedRackChanges.Cast<KeyValuePair<string, UncommittedRackChange>>().ToArray();
+            KeyValuePair<string, UncommittedRackChange>[] ucArray =
+                UncommittedRackChanges.Cast<KeyValuePair<string, UncommittedRackChange>>().ToArray();
 
             ReadOnlyDictionary<string, UncommittedRackChange> forEventChanges =
                 new ReadOnlyDictionary<string, UncommittedRackChange>(UncommittedRackChanges);
-            
+
             for (int i = 0; i < ucArray.Length; i++)
             {
                 if (UncommittedRackChanges[ucArray[i].Key] == null) continue;
+
+                if (History != null)
+                {
+                    RackKeyframeAddRemoveEventArgs info = new RackKeyframeAddRemoveEventArgs()
+                    {
+                        AffectedKeyframes = UncommittedRackChanges[ucArray[i].Key].Keyframes
+                    };
+                    History.AddUndo(new KeyframeRemoveChange(KeyframeRacks[ucArray[i].Key], info));
+                }
 
                 foreach (Keyframe kf in UncommittedRackChanges[ucArray[i].Key].Keyframes)
                 {
@@ -291,6 +391,7 @@ namespace Keyshift.Core.Classes
                         Debug.WriteLine($"Couldn't erase a keyframe from ID {ucArray[i].Key}: {e.Message}");
                     }
                 }
+
                 UncommittedRackChanges[ucArray[i].Key] = null;
             }
 
@@ -307,6 +408,7 @@ namespace Keyshift.Core.Classes
         {
             KeyframeRacks.Add(id, rack);
             rack.ChangeCommitted += OnRackCommit;
+            rack.KeyframeAdded += OnRackKeyframeAdd;
             UncommittedRackChanges.Add(id, null);
             OnTracksChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -317,10 +419,12 @@ namespace Keyshift.Core.Classes
         /// <param name="id">Rack ID</param>
         public void RemoveRack(string id)
         {
-            if (KeyframeRacks.ContainsKey(id)) {
+            if (KeyframeRacks.ContainsKey(id))
+            {
                 KeyframeRack rack = KeyframeRacks[id];
                 KeyframeRacks.Remove(id);
                 rack.ChangeCommitted -= OnRackCommit;
+                rack.KeyframeAdded -= OnRackKeyframeAdd;
                 OnTracksChanged?.Invoke(this, EventArgs.Empty);
             }
         }
@@ -335,6 +439,11 @@ namespace Keyshift.Core.Classes
             {
                 Keyframe kf = KeyframeRacks[rack].AddCurrentStateAtPosition(TrackheadPosition);
                 OnKeyframeChanged?.Invoke(this, new KeyframeChangedEventArgs(kf, ChangeType.ADDITION, rack));
+                RackKeyframeAddRemoveEventArgs info = new RackKeyframeAddRemoveEventArgs()
+                {
+                    AffectedKeyframes = new Keyframe[] { kf }
+                };
+                History.AddUndo(new KeyframeAddChange(KeyframeRacks[rack], info));
             }
             catch (Exception ex)
             {
@@ -350,12 +459,30 @@ namespace Keyshift.Core.Classes
         {
             try
             {
-                return ((IEnumerable<Keyframe>)KeyframeRacks[rack]).Where(x => x.Position <= frameEnd && x.Position >= frameStart).ToArray();
+                return ((IEnumerable<Keyframe>)KeyframeRacks[rack])
+                    .Where(x => x.Position <= frameEnd && x.Position >= frameStart).ToArray();
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Exception while trying to select from rack ID {rack}: {ex.Message}");
                 return new Keyframe[] { };
+            }
+        }
+
+        public int KeyframesBeyondLimit() => KeyframeRacks.Values.Select(x => x.KeyframesBeyondLimit(Length)).Sum();
+
+        public void ClipRacksBeyondEnd()
+        {
+            foreach (KeyframeRack rack in KeyframeRacks.Values)
+            {
+                rack.ClipAtLimit(Length);
+            }
+        }
+        public void ScrubRacksBeyondEnd()
+        {
+            foreach (KeyframeRack rack in KeyframeRacks.Values)
+            {
+                rack.ScrubBeyondLimit(Length);
             }
         }
 
@@ -371,7 +498,8 @@ namespace Keyshift.Core.Classes
             */
             int[] _keys = KeyframeRacks.Select(x =>
                     (forward ? x.Value.ImmediateForwardKeyframe?.Position : x.Value.ImmediateBehindKeyframe?.Position))
-                .Where(x => x != null && (forward ? x > TrackheadPosition : x < TrackheadPosition)).Cast<int>().Distinct()
+                .Where(x => x != null && (forward ? x > TrackheadPosition : x < TrackheadPosition)).Cast<int>()
+                .Distinct()
                 .OrderBy(x => x).ToArray();
 
             if (!_keys.Any()) return TrackheadPosition;
@@ -442,23 +570,6 @@ namespace Keyshift.Core.Classes
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Formats a frame number into a Timecode string.
-        /// </summary>
-        /// <param name="position">The frame's number</param>
-        /// <param name="fps">The base FPS</param>
-        /// <returns>A Timecode string formatted as: HH:mm:ss.ff</returns>
-        public static string FormatTimecodeString(int position, float fps = 30) {
-            int roundFps = (int)Math.Round(fps);
-            int frm, second, minute, hour;
-            frm = position % roundFps;
-            second = (int)Math.Floor((double)position / roundFps);
-            minute = (int)Math.Floor((double)second / 60);
-            hour = (int)Math.Floor((double)minute / 60);
-            return $"{hour:D2}:{minute:D2}:{second:D2}.{frm:D2}";
-
         }
     }
 }

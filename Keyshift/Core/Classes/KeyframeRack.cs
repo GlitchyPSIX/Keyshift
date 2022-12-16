@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
-using Keyshift.Core.Structs;
 
 namespace Keyshift.Core.Classes
 {
@@ -43,7 +42,31 @@ namespace Keyshift.Core.Classes
         /// Reverts the changes made from a Commit
         /// </summary>
         /// <param name="commit">The RackCommitInfo which contains the changes that are about to be reverted.</param>
-        public abstract void Revert(RackCommitInfo commit);
+        public abstract void Revert(RackCommitEventArgs commit);
+
+        /// <summary>
+        /// How many keyframes exist beyond Position.
+        /// </summary>
+        public abstract int KeyframesBeyondLimit(int limit);
+
+        /// <summary>
+        /// Removes all keyframes beyond a specified frame.
+        /// </summary>
+        /// <param name="limit">Where to start deleting from (exclusive)</param>
+        public abstract void ScrubBeyondLimit(int limit);
+
+        /// <summary>
+        /// Adds a keyframe at the desired position which has as starting value the possible interpolation value between two keyframes.
+        /// </summary>
+        /// <param name="position">The position at which to create the keyframe</param>
+        /// <returns>The newly created keyframe</returns>
+        public abstract Keyframe AddInterpolatedStateAtPosition(int position);
+
+        /// <summary>
+        /// Adds a keyframe at the limit with the proper interpolation value, then scrubs the rack beyond the frame.
+        /// </summary>
+        /// <param name="limit">Where to clip the rack</param>
+        public abstract void ClipAtLimit(int limit);
 
         /// <summary>
         /// Returns the keyframe behind the current reference frame.
@@ -98,16 +121,16 @@ namespace Keyshift.Core.Classes
         /// </summary>
         public event OnCurrentFrameChanged CurrentFrameChanged;
 
-        public event EventHandler<RackCommitInfo> ChangeCommitted;
+        public event EventHandler<RackCommitEventArgs> ChangeCommitted;
 
-        protected virtual void OnChangeCommitted(object sender, RackCommitInfo e)
+        protected virtual void OnChangeCommitted(object sender, RackCommitEventArgs e)
         {
             ChangeCommitted?.Invoke(sender, e);
         }
 
-        public event EventHandler<RackCommitInfo> ChangeReverted;
+        public event EventHandler<RackCommitEventArgs> ChangeReverted;
 
-        protected virtual void OnChangeReverted(object sender, RackCommitInfo e)
+        protected virtual void OnChangeReverted(object sender, RackCommitEventArgs e)
         {
             ChangeReverted?.Invoke(sender, e);
         }
@@ -117,13 +140,37 @@ namespace Keyshift.Core.Classes
             return Name;
         }
 
+        public event EventHandler<RackKeyframeAddRemoveEventArgs> KeyframeAdded;
+
+        protected virtual void OnKeyframeAdded(object sender, RackKeyframeAddRemoveEventArgs e)
+        {
+            KeyframeAdded?.Invoke(sender, e);
+        }
+
+        public event EventHandler<RackKeyframeAddRemoveEventArgs> KeyframeRemoved;
+
+        protected virtual void OnKeyframeRemoved(object sender, RackKeyframeAddRemoveEventArgs e)
+        {
+            KeyframeRemoved?.Invoke(sender, e);
+        }
+
         public abstract void Add(Keyframe item);
+
+        /// <summary>
+        /// Adds a Keyframe, raises no event (Used by Undo/Redo)
+        /// </summary>
+        /// <param name="item"></param>
+        public abstract void ReAdd(Keyframe item);
+
+        public abstract void AddRange(Keyframe[] items);
 
         public abstract void Clear();
 
         public abstract void Wipe();
 
         public abstract bool Remove(Keyframe item);
+
+        public abstract bool Remove(int frame);
 
         /// <summary>
         /// Takes all the Keyframes from another Keyframerack and then clears the other rack.
@@ -155,6 +202,8 @@ namespace Keyshift.Core.Classes
         public List<Keyframe<TKeyframe>> OrderedKeyframes => elements.OrderBy(k => k.Position).ToList();
         [JsonIgnore]
         public override List<Keyframe> OrderedGenericList => OrderedKeyframes.Cast<Keyframe>().ToList();
+
+        public override int KeyframesBeyondLimit(int limit) => OrderedGenericList.Count(x => x.Position > limit);
 
         /// <summary>
         /// The reason this one exists while BehindKeyframe still exists is because Behind is margin inclusive,
@@ -353,6 +402,47 @@ namespace Keyshift.Core.Classes
             return (position < end.Position && position > start.Position);
         }
 
+        public override void ClipAtLimit(int limit)
+        {
+            AddInterpolatedStateAtPosition(limit);
+            ScrubBeyondLimit(limit);
+        }
+
+        public override void ScrubBeyondLimit(int limit)
+        {
+            if (KeyframesBeyondLimit(limit) == 0) return;
+
+            Keyframe[] arrKeyframes = OrderedGenericList.Where(x => x.Position > limit).ToArray();
+            foreach (Keyframe kf in arrKeyframes)
+            {
+                Remove(kf);
+            }
+        }
+
+        public override Keyframe AddInterpolatedStateAtPosition(int position)
+        {
+            Keyframe existing = GetKeyframeAtPosition(position);
+            if (existing != null) return existing;
+
+            int oldTrackheadPosition = ReferenceFrame;
+            ReferenceFrame = position;
+            TKeyframe valueInterpolated = CalculateInterpolation();
+            Keyframe<TKeyframe> newKf = new Keyframe<TKeyframe>(valueInterpolated)
+            {
+                InterpolationType = closestBackKeyframe?.InterpolationType ?? closestFrontKeyframe.InterpolationType,
+                Position = position
+            };
+            Add(newKf);
+            RackKeyframeAddRemoveEventArgs eventArgs = new RackKeyframeAddRemoveEventArgs()
+            {
+                AffectedKeyframes = new Keyframe[] { newKf }
+            };
+            OnKeyframeAdded(this, eventArgs);
+            ReferenceFrame = oldTrackheadPosition;
+            ReassessClosestFrames();
+            return newKf;
+        }
+
         public override Keyframe AddCurrentStateAtPosition(int framepos)
         {
             TKeyframe currentVal = valueGetter();
@@ -362,30 +452,40 @@ namespace Keyshift.Core.Classes
                 closestBehindKeyframe.CurrentValue = currentVal;
                 return closestBehindKeyframe;
             }
-            Keyframe<TKeyframe> _keyframe = new Keyframe<TKeyframe>(currentVal)
+            Keyframe<TKeyframe> keyframe = new Keyframe<TKeyframe>(currentVal)
             {
                 Position = CurrentFrame
             };
             if (LockedToInterpolation != null)
             {
-                _keyframe.InterpolationType = (KeyframeType)LockedToInterpolation;
+                keyframe.InterpolationType = (KeyframeType)LockedToInterpolation;
             }
             else if (closestBackKeyframe != null)
             {
-                _keyframe.InterpolationType = closestBackKeyframe.InterpolationType;
+                keyframe.InterpolationType = closestBackKeyframe.InterpolationType;
             }
-            Add(_keyframe);
-            return _keyframe;
+            Add(keyframe);
+            RackKeyframeAddRemoveEventArgs eventArgs = new RackKeyframeAddRemoveEventArgs()
+            {
+                AffectedKeyframes = new Keyframe[] { keyframe }
+            };
+            OnKeyframeAdded(this, eventArgs);
+
+            return keyframe;
         }
 
-        public override void Revert(RackCommitInfo commit)
+        public override void Revert(RackCommitEventArgs commit)
         {
             OnChangeReverted(this, commit);
-            foreach (Keyframe keyframe in commit.Collisions)
+            if (commit.ChangePerformed.Delta != 0)
             {
-                var kf = (Keyframe<TKeyframe>)keyframe;
-                elements.Add(kf);
+                foreach (Keyframe keyframe in commit.Collisions)
+                {
+                    var kf = (Keyframe<TKeyframe>)keyframe;
+                    elements.Add(kf);
+                }
             }
+
             foreach (Keyframe kf in commit.ChangePerformed.Keyframes)
             {
                 if (!elements.Contains(kf)) elements.Add((Keyframe<TKeyframe>)kf);
@@ -406,11 +506,11 @@ namespace Keyshift.Core.Classes
         {
             int[] frameNumbers = changes.Keyframes.Select(x => (x.Position + changes.Delta)).ToArray();
             List<Keyframe> conflicts = new List<Keyframe>();
-            conflicts.AddRange(elements.Where(x => frameNumbers.Contains(x.Position)));
-            RackCommitInfo commitInfo = new RackCommitInfo()
+            conflicts.AddRange(elements.Where(x => frameNumbers.Contains(x.Position)).Except(changes.Keyframes));
+            RackCommitEventArgs commitInfo = new RackCommitEventArgs()
             {
                 ChangePerformed = changes,
-                Collisions = conflicts.ToArray()
+                Collisions = (changes.Delta != 0 ? conflicts.ToArray() : new Keyframe[] { })
             };
             OnChangeCommitted(this, commitInfo);
 
@@ -420,11 +520,16 @@ namespace Keyshift.Core.Classes
         {
             int[] frameNumbers = changes.Keyframes.Select(x => (x.Position + changes.Delta)).ToArray();
             List<Keyframe> conflicts = new List<Keyframe>();
-            conflicts.AddRange(elements.Where(x => frameNumbers.Contains(x.Position)));
-            foreach (Keyframe conflKeyframe in conflicts)
+            conflicts.AddRange(elements.Where(x => frameNumbers.Contains(x.Position)).Except(changes.Keyframes));
+
+            if (changes.Delta != 0)
             {
-                elements.Remove((Keyframe<TKeyframe>)conflKeyframe);
+                foreach (Keyframe conflKeyframe in conflicts)
+                {
+                    elements.Remove((Keyframe<TKeyframe>)conflKeyframe);
+                }
             }
+
             foreach (Keyframe kf in changes.Keyframes)
             {
                 if (!elements.Contains(kf)) elements.Add((Keyframe<TKeyframe>)kf);
@@ -464,12 +569,37 @@ namespace Keyshift.Core.Classes
 
         public override void Add(Keyframe item)
         {
+            ReAdd(item);
+            RackKeyframeAddRemoveEventArgs eventArgs = new RackKeyframeAddRemoveEventArgs()
+            {
+                AffectedKeyframes = new Keyframe[] { item }
+            };
+            OnKeyframeAdded(this, eventArgs);
+        }
+
+        public override void ReAdd(Keyframe item)
+        {
             if (item.GetType() != typeof(Keyframe<TKeyframe>)) throw new ArgumentException($"Cannot add the {item.GetType()} to a {this.GetType()}");
+            Keyframe<TKeyframe> collision = elements.FirstOrDefault(x => x.Position == item?.Position);
+            if (collision != null) Remove(collision);
             if (LockedToInterpolation != null)
             {
                 item.InterpolationType = (KeyframeType)LockedToInterpolation;
             }
             Add((Keyframe<TKeyframe>)item);
+        }
+
+        public override void AddRange(Keyframe[] items)
+        {
+            RackKeyframeAddRemoveEventArgs eventArgs = new RackKeyframeAddRemoveEventArgs()
+            {
+                AffectedKeyframes = items
+            };
+            foreach (Keyframe kf in items)
+            {
+                Add(kf);
+            }
+            OnKeyframeAdded(this, eventArgs);
         }
 
         /// <summary>
@@ -490,11 +620,26 @@ namespace Keyshift.Core.Classes
             Add(kf);
         }
 
+        public override bool Remove(int frame)
+        {
+            if (elements.Count < 2) return false;
+            if (frame < 0) return false;
+            Keyframe<TKeyframe> fallback = elements.FirstOrDefault(x => x.Position == frame);
+            bool workedAgain = elements.Remove(fallback);
+            return workedAgain;
+        }
+
         public bool Remove(Keyframe<TKeyframe> item)
         {
             if (elements.Count < 2) return false;
+            if (item == null) return false;
             bool worked = elements.Remove(item);
-            if (!worked) return false;
+            if (!worked)
+            {
+                // In case the actual object isn't found for some reason, look at its keyframe position
+                bool workedAgain = Remove(item.Position);
+                if (!workedAgain) return false;
+            }
 
             if (closestBehindKeyframe == null || closestFrontKeyframe == null)
             {

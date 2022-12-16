@@ -7,6 +7,12 @@ namespace Keyshift.Core.Classes {
         private Stack<IReversibleChange> UndoStack = new Stack<IReversibleChange>();
         private Stack<IReversibleChange> RedoStack = new Stack<IReversibleChange>();
 
+        public event EventHandler BeforeUndo;
+        public event EventHandler BeforeRedo;
+
+        public event EventHandler AfterUndo;
+        public event EventHandler AfterRedo;
+
         /// <summary>
         /// Read only array of undoable history items
         /// </summary>
@@ -30,19 +36,23 @@ namespace Keyshift.Core.Classes {
             RedoStack.Clear();
         }
 
-        public void Undo() {
+        public void DoUndo() {
             if (!CanUndo) return;
+            BeforeUndo?.Invoke(this, EventArgs.Empty);
             IReversibleChange current = UndoStack.Pop();
             current.Undo();
             RedoStack.Push(current);
+            AfterUndo?.Invoke(this, EventArgs.Empty);
         }
 
-        public void Redo()
+        public void DoRedo()
         {
             if (!CanRedo) return;
+            BeforeRedo?.Invoke(this, EventArgs.Empty);
             IReversibleChange current = RedoStack.Pop();
             current.Redo();
             UndoStack.Push(current);
+            AfterRedo?.Invoke(this, EventArgs.Empty);
         }
 
     }

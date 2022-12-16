@@ -39,7 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Controls\DoubleBufferedPanel.cs">
+    <Compile Update="Controls\ClearablePanel.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Update="Controls\ScrollableSplitContainer.cs">
