@@ -31,6 +31,9 @@ namespace Keyshift.Core.Classes
 
         private float _fps = 30;
 
+        /// <summary>
+        /// Frames per second. Used for timestamp calculations.
+        /// </summary>
         public float Fps
         {
             get => _fps;
@@ -47,6 +50,10 @@ namespace Keyshift.Core.Classes
         /// </summary>
         public bool IntegerFrames = true;
 
+        /// <summary>
+        /// Timecode for the current Trackhead position.
+        /// </summary>
+        /// <returns>A HH:mm:ss.ff formatted timecode.</returns>
         public string TimecodeString() => Timecode.FramesToTimecode(TrackheadPosition, Fps);
 
         public bool LoopActive { get; set; }
@@ -80,8 +87,6 @@ namespace Keyshift.Core.Classes
             }
         }
 
-        // TODO: Add Undoable Action Interface
-
         public delegate void KeyframeChanged(object sender, KeyframeChangedEventArgs e);
 
         public event KeyframeChanged OnKeyframeChanged;
@@ -106,6 +111,9 @@ namespace Keyshift.Core.Classes
 
         public event EventHandler<EventArgs> OnTracksChanged;
 
+        /// <summary>
+        /// Triggered whenever the Timeline is deserialized to.
+        /// </summary>
         public event TimelineLoaded OnTimelineLoaded;
 
         public List<string> SelectedRacks { get; set; } = new List<string>();
@@ -115,6 +123,9 @@ namespace Keyshift.Core.Classes
 
         public bool StagedKeyframesPresent => UncommittedRackChanges.Any(x => x.Value != null);
 
+        /// <summary>
+        /// The position of the Timeline's trackhead. Moved manually. Triggers events on move.
+        /// </summary>
         public int TrackheadPosition
         {
             get => _trackHead;
@@ -190,20 +201,14 @@ namespace Keyshift.Core.Classes
         {
             // Rack is always type KeyframeRack
             KeyframeRack actualRack = (KeyframeRack)rack;
-            if (History != null)
-            {
-                History.AddUndo(new KeyframeCommitChange(actualRack, info));
-            }
+            History?.AddUndo(new KeyframeCommitChange(actualRack, info));
         }
 
         private void OnRackKeyframeAdd(object rack, RackKeyframeAddRemoveEventArgs info)
         {
             // Rack is always type KeyframeRack
             KeyframeRack actualRack = (KeyframeRack)rack;
-            if (History != null)
-            {
-                History.AddUndo(new KeyframeAddChange(actualRack, info));
-            }
+            History?.AddUndo(new KeyframeAddChange(actualRack, info));
         }
 
         protected void OnUndo(object sender, EventArgs e)
@@ -216,6 +221,10 @@ namespace Keyshift.Core.Classes
             SelectedKeyframes.Clear();
         }
 
+        /// <summary>
+        /// Serializes the Timeline to JSON.
+        /// </summary>
+        /// <returns>A String with the Timeline's contents.</returns>
         public string SerializeToJson()
         {
             return JsonConvert.SerializeObject(KeyframeRacks, Formatting.None, new JsonSerializerSettings()
@@ -228,7 +237,7 @@ namespace Keyshift.Core.Classes
         }
 
         /// <summary>
-        /// Deserializes a JSON to Timeline.
+        /// Deserializes a JSON to Timeline. Only deserializes to tracks that coincide in ID.
         /// </summary>
         /// <param name="jsonIn">JSON string.</param>
         /// <returns>True if success, false if failure.</returns>
@@ -340,7 +349,7 @@ namespace Keyshift.Core.Classes
         public void CommitAllStaged()
         {
             KeyValuePair<string, UncommittedRackChange>[] ucArray =
-                UncommittedRackChanges.Cast<KeyValuePair<string, UncommittedRackChange>>().ToArray();
+                UncommittedRackChanges.ToArray();
 
             ReadOnlyDictionary<string, UncommittedRackChange> forEventChanges =
                 new ReadOnlyDictionary<string, UncommittedRackChange>(UncommittedRackChanges);
@@ -362,7 +371,7 @@ namespace Keyshift.Core.Classes
         public void DeleteAllStaged()
         {
             KeyValuePair<string, UncommittedRackChange>[] ucArray =
-                UncommittedRackChanges.Cast<KeyValuePair<string, UncommittedRackChange>>().ToArray();
+                UncommittedRackChanges.ToArray();
 
             ReadOnlyDictionary<string, UncommittedRackChange> forEventChanges =
                 new ReadOnlyDictionary<string, UncommittedRackChange>(UncommittedRackChanges);
@@ -377,7 +386,7 @@ namespace Keyshift.Core.Classes
                     {
                         AffectedKeyframes = UncommittedRackChanges[ucArray[i].Key].Keyframes
                     };
-                    History.AddUndo(new KeyframeRemoveChange(KeyframeRacks[ucArray[i].Key], info));
+                    History?.AddUndo(new KeyframeRemoveChange(KeyframeRacks[ucArray[i].Key], info));
                 }
 
                 foreach (Keyframe kf in UncommittedRackChanges[ucArray[i].Key].Keyframes)
@@ -443,7 +452,7 @@ namespace Keyshift.Core.Classes
                 {
                     AffectedKeyframes = new Keyframe[] { kf }
                 };
-                History.AddUndo(new KeyframeAddChange(KeyframeRacks[rack], info));
+                History?.AddUndo(new KeyframeAddChange(KeyframeRacks[rack], info));
             }
             catch (Exception ex)
             {

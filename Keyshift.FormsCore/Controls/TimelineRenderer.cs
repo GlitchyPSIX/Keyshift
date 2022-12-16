@@ -1,14 +1,9 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Text;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Keyshift.Core.Classes;
 using Keyshift.Core.Structs;
@@ -21,7 +16,7 @@ namespace Keyshift.Forms.Controls
     public partial class TimelineRenderer : UserControl
     {
         private const int WHEEL_DELTA = 120;
-        private const int KEYFRAME_WIDTH = 24; // TODO: Change this size to be dynamic especially vs. HiDPI
+        private const int KEYFRAME_WIDTH = 24;
 
         private Brush headerBrush = new SolidBrush(Color.FromArgb(150, 0, 0, 0));
         private Brush frameNumBrush = new SolidBrush(Color.White);
@@ -64,6 +59,12 @@ namespace Keyshift.Forms.Controls
         private int[] _selectionFrameMargins = new[] { 0, 0, 0 }; // The third is the index of the track
         private Point _startingMousePos;
 
+        [EditorBrowsable]
+        public override Image BackgroundImage {
+            get => scTimelineSplit.Panel2.BackgroundImage;
+            set => scTimelineSplit.Panel2.BackgroundImage = value;
+        }
+
         protected override CreateParams CreateParams
         {
             get
@@ -80,21 +81,18 @@ namespace Keyshift.Forms.Controls
             _initialized = false;
             frameFont = new Font(Font.FontFamily, 8, FontStyle.Regular);
             frameFontBold = new Font(Font.FontFamily, 8, FontStyle.Bold);
-            tbZoom.Minimum = KEYFRAME_WIDTH/2;
         }
 
         public TimelineRenderer(Timeline tl)
         {
             InitializeComponent();
+            _tl = tl;
             frameFont = new Font(Font.FontFamily, 8, FontStyle.Regular);
             frameFontBold = new Font(Font.FontFamily, 8, FontStyle.Bold);
-            InitializeTimeline(tl);
-            tbZoom.Minimum = KEYFRAME_WIDTH / 2;
         }
 
         public void InitializeTimeline(Timeline tl)
         {
-            _tl = tl;
             _tlBs.DataSource = _tl.KeyframeRacks;
 
             tsmLinear.Click += (a, b) => { _tl.SetSelectedKeyframeInterpolation(KeyframeType.Linear); _tl.CommitAllStaged(); };
@@ -189,12 +187,11 @@ namespace Keyshift.Forms.Controls
         {
             if (!IsHandleCreated) return;
 
-            frameSizeInPixels = tbZoom.Value;
-            int leftBoundary = Math.Max(0, Math.Min(frame * frameSizeInPixels - (int)Math.Round(frameSizeInPixels * 0.5), frame * frameSizeInPixels - KEYFRAME_WIDTH));
-            int rightBoundary = Math.Min(frameSizeInPixels * _tl.Length + 1, Math.Max(frame * frameSizeInPixels + (int)Math.Round(frameSizeInPixels * 0.5), frame * frameSizeInPixels + KEYFRAME_WIDTH));
-
             BeginInvoke(new MethodInvoker(() =>
             {
+                frameSizeInPixels = tbZoom.Value;
+                int leftBoundary = Math.Max(0, Math.Min(frame * frameSizeInPixels - (int)Math.Round(frameSizeInPixels * 0.5), frame * frameSizeInPixels - KEYFRAME_WIDTH));
+                int rightBoundary = Math.Min(frameSizeInPixels * _tl.Length + 1, Math.Max(frame * frameSizeInPixels + (int)Math.Round(frameSizeInPixels * 0.5), frame * frameSizeInPixels + KEYFRAME_WIDTH));
                 lbTimecode.Text = _tl.TimecodeString();
                 pnlTrackhead.Invalidate(new Rectangle(leftBoundary, 0, rightBoundary - leftBoundary, scRacksTrackhead.Height));
                 pnlRacks.Invalidate(new Rectangle(leftBoundary, scRacksTrackhead.Panel2.VerticalScroll.Value, rightBoundary - leftBoundary, scRacksTrackhead.Panel2.Height));
@@ -206,12 +203,11 @@ namespace Keyshift.Forms.Controls
         {
             if (!IsHandleCreated) return;
 
-            frameSizeInPixels = tbZoom.Value;
-            int leftBoundary = Math.Max(0, Math.Min(region.FrameStart * frameSizeInPixels - (int)Math.Round(frameSizeInPixels * 0.5), region.FrameStart * frameSizeInPixels - KEYFRAME_WIDTH));
-            int rightBoundary = Math.Min(frameSizeInPixels * _tl.Length + 1, Math.Max(region.FrameEnd * frameSizeInPixels + (int)Math.Round(frameSizeInPixels * 0.5), region.FrameEnd * frameSizeInPixels + KEYFRAME_WIDTH));
-
             BeginInvoke(new MethodInvoker(() =>
             {
+                frameSizeInPixels = tbZoom.Value;
+                int leftBoundary = Math.Max(0, Math.Min(region.FrameStart * frameSizeInPixels - (int)Math.Round(frameSizeInPixels * 0.5), region.FrameStart * frameSizeInPixels - KEYFRAME_WIDTH));
+                int rightBoundary = Math.Min(frameSizeInPixels * _tl.Length + 1, Math.Max(region.FrameEnd * frameSizeInPixels + (int)Math.Round(frameSizeInPixels * 0.5), region.FrameEnd * frameSizeInPixels + KEYFRAME_WIDTH));
                 lbTimecode.Text = _tl.TimecodeString();
                 pnlTrackhead.Invalidate(new Rectangle(leftBoundary, 0, rightBoundary - leftBoundary, scRacksTrackhead.Height));
                 pnlRacks.Invalidate(new Rectangle(leftBoundary, 0, rightBoundary - leftBoundary, pnlRacks.Height));
@@ -232,9 +228,9 @@ namespace Keyshift.Forms.Controls
         void AdjustTimelineWidth()
         {
             if (!IsHandleCreated) return;
-            frameSizeInPixels = tbZoom.Value;
             BeginInvoke(new MethodInvoker(() =>
             {
+                frameSizeInPixels = tbZoom.Value;
                 if (_initialized)
                 {
                     scRacksTrackhead.Width = (_tl.Length - 1) * frameSizeInPixels + (frameSizeInPixels);
@@ -252,9 +248,8 @@ namespace Keyshift.Forms.Controls
         private void splitContainer1_Panel1_Paint(object sender, PaintEventArgs e)
         {
             int headerHeight = scRacksTrackhead.Panel1.Height;
-            using (Graphics g = e.Graphics)
-            {
-                g.CompositingQuality = CompositingQuality.HighQuality;
+            using (Graphics g = e.Graphics) {
+                g.CompositingQuality = CompositingQuality.HighSpeed;
                 if (!_initialized) return;
 
                 // Loop
@@ -286,8 +281,10 @@ namespace Keyshift.Forms.Controls
                     new(_tl.TrackheadPosition * frameSizeInPixels + 6, 25),
                     new(_tl.TrackheadPosition * frameSizeInPixels + 6, 14)
                 });
+                g.SmoothingMode = SmoothingMode.HighQuality;
                 g.FillPath(trackHeadBrush, trackheadPath);
                 g.DrawPath(trackHeadPen, trackheadPath);
+                g.SmoothingMode = SmoothingMode.HighSpeed;
 
                 g.DrawLine(frameCountPen, 0, headerHeight, pnlRacks.Width, headerHeight);
             }
@@ -298,6 +295,8 @@ namespace Keyshift.Forms.Controls
             using (Graphics g = e.Graphics)
             {
                 int headerHeight = lbRackTitles.ItemHeight;
+                g.CompositingQuality = CompositingQuality.HighSpeed;
+                g.SmoothingMode = SmoothingMode.HighSpeed;
 
                 if (!_initialized)
                 {
@@ -333,7 +332,6 @@ namespace Keyshift.Forms.Controls
                     g.DrawLine(loopRegionPen, _tl.LoopRegion.FrameEnd * frameSizeInPixels, 0, _tl.LoopRegion.FrameEnd * frameSizeInPixels, pnlRacks.Height);
                 }
 
-                g.SmoothingMode = SmoothingMode.AntiAlias;
                 // Why do I repeat the same loop? Painter's algorithm
                 // Keyframes go over the racks and so any modifiers (like selection)
                 for (int i = 0; i < krArray.Count(); i++)
@@ -371,7 +369,6 @@ namespace Keyshift.Forms.Controls
                             }
                         }
                     }
-                    g.SmoothingMode = SmoothingMode.HighSpeed;
 
                     // Selection box
                     if (_selecting && i == _selectionFrameMargins[2])
@@ -1045,8 +1042,15 @@ namespace Keyshift.Forms.Controls
 
         private void TimelineRenderer_Load(object sender, EventArgs e)
         {
-            AdjustTimelineWidth();
-            ResizeRacks();
+            if (!_initialized && _tl != null)
+            {
+                BeginInvoke(new MethodInvoker(() =>
+                {
+                    InitializeTimeline(_tl);
+                    AdjustTimelineWidth();
+                    ResizeRacks();
+                }));
+            }
         }
     }
 }

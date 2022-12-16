@@ -36,8 +36,14 @@ namespace Keyshift.Forms.Controls
             this.components = new System.ComponentModel.Container();
             this.scControls = new System.Windows.Forms.SplitContainer();
             this.scTimelineSplit = new System.Windows.Forms.SplitContainer();
+            this.scRackTitles = new Keyshift.Forms.Controls.ScrollableSplitContainer();
+            this.btnTimelineOptions = new System.Windows.Forms.Button();
+            this.lbTimecode = new System.Windows.Forms.Label();
+            this.lbRackTitles = new System.Windows.Forms.ListBox();
             this.scRacksTrackhead = new System.Windows.Forms.SplitContainer();
+            this.pnlTrackhead = new Keyshift.Forms.Controls.ClearablePanel();
             this.pbFrameRuler = new System.Windows.Forms.PictureBox();
+            this.pnlRacks = new Keyshift.Forms.Controls.ResettablePanel();
             this.cbSync = new System.Windows.Forms.CheckBox();
             this.label1 = new System.Windows.Forms.Label();
             this.btnEnd = new System.Windows.Forms.Button();
@@ -77,12 +83,6 @@ namespace Keyshift.Forms.Controls
             this.beginLoopHereToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.endLoopHereToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ttKeyframeInfo = new System.Windows.Forms.ToolTip(this.components);
-            this.scRackTitles = new Keyshift.Forms.Controls.ScrollableSplitContainer();
-            this.btnTimelineOptions = new System.Windows.Forms.Button();
-            this.lbTimecode = new System.Windows.Forms.Label();
-            this.lbRackTitles = new System.Windows.Forms.ListBox();
-            this.pnlTrackhead = new Keyshift.Forms.Controls.ClearablePanel();
-            this.pnlRacks = new Keyshift.Forms.Controls.ResettablePanel();
             ((System.ComponentModel.ISupportInitialize)(this.scControls)).BeginInit();
             this.scControls.Panel1.SuspendLayout();
             this.scControls.Panel2.SuspendLayout();
@@ -91,6 +91,10 @@ namespace Keyshift.Forms.Controls
             this.scTimelineSplit.Panel1.SuspendLayout();
             this.scTimelineSplit.Panel2.SuspendLayout();
             this.scTimelineSplit.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.scRackTitles)).BeginInit();
+            this.scRackTitles.Panel1.SuspendLayout();
+            this.scRackTitles.Panel2.SuspendLayout();
+            this.scRackTitles.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.scRacksTrackhead)).BeginInit();
             this.scRacksTrackhead.Panel1.SuspendLayout();
             this.scRacksTrackhead.Panel2.SuspendLayout();
@@ -100,10 +104,6 @@ namespace Keyshift.Forms.Controls
             this.cmsKeyframeSettings.SuspendLayout();
             this.cmsTimeSettings.SuspendLayout();
             this.cmsTimelineHelper.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.scRackTitles)).BeginInit();
-            this.scRackTitles.Panel1.SuspendLayout();
-            this.scRackTitles.Panel2.SuspendLayout();
-            this.scRackTitles.SuspendLayout();
             this.SuspendLayout();
             // 
             // scControls
@@ -160,7 +160,6 @@ namespace Keyshift.Forms.Controls
             // scTimelineSplit.Panel2
             // 
             this.scTimelineSplit.Panel2.AutoScroll = true;
-            this.scTimelineSplit.Panel2.BackgroundImage = global::Keyshift.Forms.Properties.Resources.MACBG2;
             this.scTimelineSplit.Panel2.Controls.Add(this.scRacksTrackhead);
             this.scTimelineSplit.Panel2.Scroll += new System.Windows.Forms.ScrollEventHandler(this.scTimelineSplit_Panel2_Scroll);
             this.scTimelineSplit.Panel2MinSize = 220;
@@ -168,6 +167,73 @@ namespace Keyshift.Forms.Controls
             this.scTimelineSplit.SplitterDistance = 200;
             this.scTimelineSplit.SplitterWidth = 2;
             this.scTimelineSplit.TabIndex = 1;
+            // 
+            // scRackTitles
+            // 
+            this.scRackTitles.AutoScroll = true;
+            this.scRackTitles.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.scRackTitles.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
+            this.scRackTitles.IsSplitterFixed = true;
+            this.scRackTitles.Location = new System.Drawing.Point(0, 0);
+            this.scRackTitles.Margin = new System.Windows.Forms.Padding(0);
+            this.scRackTitles.Name = "scRackTitles";
+            this.scRackTitles.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            // 
+            // scRackTitles.Panel1
+            // 
+            this.scRackTitles.Panel1.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.scRackTitles.Panel1.Controls.Add(this.btnTimelineOptions);
+            this.scRackTitles.Panel1.Controls.Add(this.lbTimecode);
+            this.scRackTitles.Panel1MinSize = 31;
+            // 
+            // scRackTitles.Panel2
+            // 
+            this.scRackTitles.Panel2.AutoScroll = true;
+            this.scRackTitles.Panel2.Controls.Add(this.lbRackTitles);
+            this.scRackTitles.Panel2.Scroll += new System.Windows.Forms.ScrollEventHandler(this.scRackTitles_Panel2_Scroll);
+            this.scRackTitles.Size = new System.Drawing.Size(198, 484);
+            this.scRackTitles.SplitterDistance = 31;
+            this.scRackTitles.SplitterWidth = 1;
+            this.scRackTitles.TabIndex = 1;
+            // 
+            // btnTimelineOptions
+            // 
+            this.btnTimelineOptions.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnTimelineOptions.Location = new System.Drawing.Point(173, 0);
+            this.btnTimelineOptions.Name = "btnTimelineOptions";
+            this.btnTimelineOptions.Size = new System.Drawing.Size(25, 31);
+            this.btnTimelineOptions.TabIndex = 1;
+            this.btnTimelineOptions.Text = "▼";
+            this.ttButtonInfo.SetToolTip(this.btnTimelineOptions, "Options");
+            this.btnTimelineOptions.UseVisualStyleBackColor = true;
+            this.btnTimelineOptions.Click += new System.EventHandler(this.btnTimelineOptions_Click);
+            // 
+            // lbTimecode
+            // 
+            this.lbTimecode.Dock = System.Windows.Forms.DockStyle.Left;
+            this.lbTimecode.Font = new System.Drawing.Font("Lucida Console", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbTimecode.Location = new System.Drawing.Point(0, 0);
+            this.lbTimecode.Name = "lbTimecode";
+            this.lbTimecode.Size = new System.Drawing.Size(173, 31);
+            this.lbTimecode.TabIndex = 0;
+            this.lbTimecode.Text = "00:00:00.00";
+            this.lbTimecode.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbRackTitles
+            // 
+            this.lbRackTitles.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.lbRackTitles.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lbRackTitles.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
+            this.lbRackTitles.FormattingEnabled = true;
+            this.lbRackTitles.ItemHeight = 24;
+            this.lbRackTitles.Location = new System.Drawing.Point(0, 0);
+            this.lbRackTitles.Margin = new System.Windows.Forms.Padding(0);
+            this.lbRackTitles.Name = "lbRackTitles";
+            this.lbRackTitles.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
+            this.lbRackTitles.Size = new System.Drawing.Size(198, 216);
+            this.lbRackTitles.TabIndex = 1;
+            this.lbRackTitles.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.lbRackTitles_DrawItem);
+            this.lbRackTitles.SelectedValueChanged += new System.EventHandler(this.lbRackTitles_SelectedValueChanged);
             // 
             // scRacksTrackhead
             // 
@@ -196,6 +262,21 @@ namespace Keyshift.Forms.Controls
             this.scRacksTrackhead.SplitterWidth = 1;
             this.scRacksTrackhead.TabIndex = 1;
             // 
+            // pnlTrackhead
+            // 
+            this.pnlTrackhead.BackColor = System.Drawing.Color.Transparent;
+            this.pnlTrackhead.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlTrackhead.Location = new System.Drawing.Point(0, 0);
+            this.pnlTrackhead.Name = "pnlTrackhead";
+            this.pnlTrackhead.PaintBackground = true;
+            this.pnlTrackhead.Size = new System.Drawing.Size(330, 32);
+            this.pnlTrackhead.TabIndex = 0;
+            this.pnlTrackhead.Paint += new System.Windows.Forms.PaintEventHandler(this.splitContainer1_Panel1_Paint);
+            this.pnlTrackhead.MouseClick += new System.Windows.Forms.MouseEventHandler(this.scRacksTrackhead_Panel1_MouseClick);
+            this.pnlTrackhead.MouseDown += new System.Windows.Forms.MouseEventHandler(this.scRacksTrackhead_Panel1_MouseDown);
+            this.pnlTrackhead.MouseMove += new System.Windows.Forms.MouseEventHandler(this.scRacksTrackhead_Panel1_MouseMove);
+            this.pnlTrackhead.MouseUp += new System.Windows.Forms.MouseEventHandler(this.scRacksTrackhead_Panel1_MouseUp);
+            // 
             // pbFrameRuler
             // 
             this.pbFrameRuler.BackColor = System.Drawing.Color.DarkGray;
@@ -205,6 +286,25 @@ namespace Keyshift.Forms.Controls
             this.pbFrameRuler.Size = new System.Drawing.Size(330, 32);
             this.pbFrameRuler.TabIndex = 0;
             this.pbFrameRuler.TabStop = false;
+            // 
+            // pnlRacks
+            // 
+            this.pnlRacks.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.pnlRacks.BackColor = System.Drawing.Color.Transparent;
+            this.pnlRacks.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlRacks.Location = new System.Drawing.Point(0, 0);
+            this.pnlRacks.Margin = new System.Windows.Forms.Padding(0);
+            this.pnlRacks.Name = "pnlRacks";
+            this.pnlRacks.Size = new System.Drawing.Size(330, 47);
+            this.pnlRacks.TabIndex = 0;
+            this.pnlRacks.Scroll += new System.Windows.Forms.ScrollEventHandler(this.pnlRacks_Scroll);
+            this.pnlRacks.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlRacks_Paint);
+            this.pnlRacks.MouseClick += new System.Windows.Forms.MouseEventHandler(this.pnlRacks_MouseClick);
+            this.pnlRacks.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.pnlRacks_MouseDoubleClick);
+            this.pnlRacks.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pnlRacks_MouseDown);
+            this.pnlRacks.MouseHover += new System.EventHandler(this.pnlRacks_MouseHover);
+            this.pnlRacks.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pnlRacks_MouseMove);
+            this.pnlRacks.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pnlRacks_MouseUp);
             // 
             // cbSync
             // 
@@ -557,112 +657,12 @@ namespace Keyshift.Forms.Controls
             this.ttKeyframeInfo.InitialDelay = 1000;
             this.ttKeyframeInfo.ReshowDelay = 10;
             // 
-            // scRackTitles
-            // 
-            this.scRackTitles.AutoScroll = true;
-            this.scRackTitles.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.scRackTitles.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
-            this.scRackTitles.IsSplitterFixed = true;
-            this.scRackTitles.Location = new System.Drawing.Point(0, 0);
-            this.scRackTitles.Margin = new System.Windows.Forms.Padding(0);
-            this.scRackTitles.Name = "scRackTitles";
-            this.scRackTitles.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            // 
-            // scRackTitles.Panel1
-            // 
-            this.scRackTitles.Panel1.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            this.scRackTitles.Panel1.Controls.Add(this.btnTimelineOptions);
-            this.scRackTitles.Panel1.Controls.Add(this.lbTimecode);
-            this.scRackTitles.Panel1MinSize = 31;
-            // 
-            // scRackTitles.Panel2
-            // 
-            this.scRackTitles.Panel2.AutoScroll = true;
-            this.scRackTitles.Panel2.Controls.Add(this.lbRackTitles);
-            this.scRackTitles.Panel2.Scroll += new System.Windows.Forms.ScrollEventHandler(this.scRackTitles_Panel2_Scroll);
-            this.scRackTitles.Size = new System.Drawing.Size(198, 484);
-            this.scRackTitles.SplitterDistance = 31;
-            this.scRackTitles.SplitterWidth = 1;
-            this.scRackTitles.TabIndex = 1;
-            // 
-            // btnTimelineOptions
-            // 
-            this.btnTimelineOptions.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnTimelineOptions.Location = new System.Drawing.Point(173, 0);
-            this.btnTimelineOptions.Name = "btnTimelineOptions";
-            this.btnTimelineOptions.Size = new System.Drawing.Size(25, 31);
-            this.btnTimelineOptions.TabIndex = 1;
-            this.btnTimelineOptions.Text = "▼";
-            this.ttButtonInfo.SetToolTip(this.btnTimelineOptions, "Options");
-            this.btnTimelineOptions.UseVisualStyleBackColor = true;
-            this.btnTimelineOptions.Click += new System.EventHandler(this.btnTimelineOptions_Click);
-            // 
-            // lbTimecode
-            // 
-            this.lbTimecode.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lbTimecode.Font = new System.Drawing.Font("Lucida Console", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lbTimecode.Location = new System.Drawing.Point(0, 0);
-            this.lbTimecode.Name = "lbTimecode";
-            this.lbTimecode.Size = new System.Drawing.Size(173, 31);
-            this.lbTimecode.TabIndex = 0;
-            this.lbTimecode.Text = "00:00:00.00";
-            this.lbTimecode.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lbRackTitles
-            // 
-            this.lbRackTitles.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.lbRackTitles.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lbRackTitles.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
-            this.lbRackTitles.FormattingEnabled = true;
-            this.lbRackTitles.ItemHeight = 24;
-            this.lbRackTitles.Location = new System.Drawing.Point(0, 0);
-            this.lbRackTitles.Margin = new System.Windows.Forms.Padding(0);
-            this.lbRackTitles.Name = "lbRackTitles";
-            this.lbRackTitles.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.lbRackTitles.Size = new System.Drawing.Size(198, 216);
-            this.lbRackTitles.TabIndex = 1;
-            this.lbRackTitles.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.lbRackTitles_DrawItem);
-            this.lbRackTitles.SelectedValueChanged += new System.EventHandler(this.lbRackTitles_SelectedValueChanged);
-            // 
-            // pnlTrackhead
-            // 
-            this.pnlTrackhead.BackColor = System.Drawing.Color.Transparent;
-            this.pnlTrackhead.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlTrackhead.Location = new System.Drawing.Point(0, 0);
-            this.pnlTrackhead.Name = "pnlTrackhead";
-            this.pnlTrackhead.PaintBackground = true;
-            this.pnlTrackhead.Size = new System.Drawing.Size(330, 32);
-            this.pnlTrackhead.TabIndex = 0;
-            this.pnlTrackhead.Paint += new System.Windows.Forms.PaintEventHandler(this.splitContainer1_Panel1_Paint);
-            this.pnlTrackhead.MouseClick += new System.Windows.Forms.MouseEventHandler(this.scRacksTrackhead_Panel1_MouseClick);
-            this.pnlTrackhead.MouseDown += new System.Windows.Forms.MouseEventHandler(this.scRacksTrackhead_Panel1_MouseDown);
-            this.pnlTrackhead.MouseMove += new System.Windows.Forms.MouseEventHandler(this.scRacksTrackhead_Panel1_MouseMove);
-            this.pnlTrackhead.MouseUp += new System.Windows.Forms.MouseEventHandler(this.scRacksTrackhead_Panel1_MouseUp);
-            // 
-            // pnlRacks
-            // 
-            this.pnlRacks.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.pnlRacks.BackColor = System.Drawing.Color.Transparent;
-            this.pnlRacks.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlRacks.Location = new System.Drawing.Point(0, 0);
-            this.pnlRacks.Margin = new System.Windows.Forms.Padding(0);
-            this.pnlRacks.Name = "pnlRacks";
-            this.pnlRacks.Size = new System.Drawing.Size(330, 47);
-            this.pnlRacks.TabIndex = 0;
-            this.pnlRacks.Scroll += new System.Windows.Forms.ScrollEventHandler(this.pnlRacks_Scroll);
-            this.pnlRacks.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlRacks_Paint);
-            this.pnlRacks.MouseClick += new System.Windows.Forms.MouseEventHandler(this.pnlRacks_MouseClick);
-            this.pnlRacks.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.pnlRacks_MouseDoubleClick);
-            this.pnlRacks.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pnlRacks_MouseDown);
-            this.pnlRacks.MouseHover += new System.EventHandler(this.pnlRacks_MouseHover);
-            this.pnlRacks.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pnlRacks_MouseMove);
-            this.pnlRacks.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pnlRacks_MouseUp);
-            // 
             // TimelineRenderer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.BackgroundImage = global::Keyshift.Forms.Properties.Resources.MACBG2;
             this.Controls.Add(this.scControls);
             this.DoubleBuffered = true;
             this.MinimumSize = new System.Drawing.Size(420, 128);
@@ -678,6 +678,10 @@ namespace Keyshift.Forms.Controls
             this.scTimelineSplit.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.scTimelineSplit)).EndInit();
             this.scTimelineSplit.ResumeLayout(false);
+            this.scRackTitles.Panel1.ResumeLayout(false);
+            this.scRackTitles.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.scRackTitles)).EndInit();
+            this.scRackTitles.ResumeLayout(false);
             this.scRacksTrackhead.Panel1.ResumeLayout(false);
             this.scRacksTrackhead.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.scRacksTrackhead)).EndInit();
@@ -687,10 +691,6 @@ namespace Keyshift.Forms.Controls
             this.cmsKeyframeSettings.ResumeLayout(false);
             this.cmsTimeSettings.ResumeLayout(false);
             this.cmsTimelineHelper.ResumeLayout(false);
-            this.scRackTitles.Panel1.ResumeLayout(false);
-            this.scRackTitles.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.scRackTitles)).EndInit();
-            this.scRackTitles.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }

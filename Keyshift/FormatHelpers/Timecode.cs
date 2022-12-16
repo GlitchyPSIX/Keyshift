@@ -15,9 +15,9 @@ namespace Keyshift.FormatHelpers
             int roundFps = (int)Math.Round(fps);
             int frm, second, minute, hour;
             frm = position % roundFps;
-            second = (int)Math.Floor((double)position / roundFps);
-            minute = (int)Math.Floor((double)second / 60);
-            hour = (int)Math.Floor((double)minute / 60);
+            second = (int)Math.Floor((double)position / roundFps) % 60;
+            minute = (int)Math.Floor((double)second / 60) % 60;
+            hour = (int)Math.Floor((double)minute / 60) % 60;
             return $"{hour:D2}:{minute:D2}:{second:D2}.{frm:D2}";
 
         }

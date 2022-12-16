@@ -5,6 +5,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace Keyshift.Core.Classes.Rack
 {
+    // KIO is not a typo. Keyshift's codename was KI-O.
     public class KIOTypesBinder : ISerializationBinder
     {
         private DefaultSerializationBinder binder = new DefaultSerializationBinder();
@@ -12,10 +13,11 @@ namespace Keyshift.Core.Classes.Rack
         /// <summary>
         /// Add the types of special Racks to be recognized as Orchestrable whenever necessary in here, so the (de)serializer can do its thing.
         /// </summary>
-        public IList<Type> KnownTypes { get; } = new List<Type>()
+        public virtual IList<Type> KnownTypes { get; } = new List<Type>()
         {
             typeof(Vector3KeyframeRack),
             typeof(XYAngleKeyframeRack),
+            typeof(BoolKeyframeRack),
             typeof(FloatKeyframeRack)
         };
 

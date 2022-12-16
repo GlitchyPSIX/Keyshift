@@ -7,11 +7,37 @@ namespace Keyshift.Core.Classes {
         private Stack<IReversibleChange> UndoStack = new Stack<IReversibleChange>();
         private Stack<IReversibleChange> RedoStack = new Stack<IReversibleChange>();
 
+        /// <summary>
+        /// Triggered when Undo is performed, before actually doing so.
+        /// </summary>
         public event EventHandler BeforeUndo;
+        /// <summary>
+        /// Triggered when Redo is performed, before actually doing so.
+        /// </summary>
         public event EventHandler BeforeRedo;
 
+        /// <summary>
+        /// Triggered when Undo is performed, after actually doing so.
+        /// </summary>
         public event EventHandler AfterUndo;
+        /// <summary>
+        /// Triggered when Redo is performed, after actually doing so.
+        /// </summary>
         public event EventHandler AfterRedo;
+
+        /// <summary>
+        /// Triggered when an element is pushed to the Undo queue, before actually doing so.
+        /// </summary>
+        public event EventHandler<IReversibleChange> BeforePush;
+        /// <summary>
+        /// Triggered after an element is pushed to the Undo queue, before actually doing so.
+        /// </summary>
+        public event EventHandler<IReversibleChange> AfterPush;
+
+        /// <summary>
+        /// Triggered when the History is cleared up.
+        /// </summary>
+        public event EventHandler Erasure;
 
         /// <summary>
         /// Read only array of undoable history items
@@ -22,16 +48,25 @@ namespace Keyshift.Core.Classes {
         /// </summary>
         public IReversibleChange[] RedoArray => RedoStack.ToArray();
 
+        /// <summary>
+        /// Whether History can undo.
+        /// </summary>
         public bool CanUndo => UndoStack.Count > 0;
+        /// <summary>
+        /// Whether History can redo.
+        /// </summary>
         public bool CanRedo => RedoStack.Count > 0;
 
         public void AddUndo(IReversibleChange change)
         {
+            BeforePush?.Invoke(this, change);
             RedoStack.Clear();
             UndoStack.Push(change);
+            AfterPush?.Invoke(this, change);
         }
 
         public void EraseHistory() {
+            Erasure?.Invoke(this, EventArgs.Empty);
             UndoStack.Clear();
             RedoStack.Clear();
         }
