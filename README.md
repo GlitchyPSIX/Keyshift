@@ -5,6 +5,11 @@
 
 C# Keyframe Timeline/Sequencer/Dope Sheet library with WinForms GUI extension.
 
+| Package         | NuGet                                                                   |
+|-----------------|-------------------------------------------------------------------------|
+| Keyshift (core) | [![Nuget](https://img.shields.io/nuget/v/Keyshift?color=%23366fff)](https://www.nuget.org/packages/Keyshift)       |
+| Keyshift.Forms  | [![Nuget](https://img.shields.io/nuget/v/Keyshift.Forms?color=%23366fff)](https://www.nuget.org/packages/Keyshift.Forms) |
+
 Originally KI-O for M64MM's [METAL Orchestrator](https://github.com/projectcomet64/metal-orchestrator)
 
 GlitchyPSI & [Project Comet](https://github.com/projectcomet64)
